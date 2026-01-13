@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pamesa Cerámica Experience 2026</title>
+    
+    <!-- Tipografía Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CONFIGURACIÓN BASE --- */
+        :root {
+            --glass-bg: rgba(20, 20, 20, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --accent-glow: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Montserrat', sans-serif;
+            user-select: none;
+            color: #fff;
+        }
+
+        /* --- CAPAS DE VIDEO --- */
+        .video-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; pointer-events: none;
+        }
+        .video-layer iframe {
+            width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            /* Filtro inicial sutil */
+            filter: brightness(0.8);
+            transition: filter 1.5s ease;
+        }
+        
+        /* Cuando está activo, brilla más */
+        body.mode-active .video-layer iframe { filter: brightness(1); }
+
+        /* Viñeta para dar profundidad cinematográfica */
+        .vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 20%, #000 100%);
+            z-index: 2; pointer-events: none;
+            opacity: 0.8;
+            transition: opacity 1.5s ease;
+        }
+        body.mode-active .vignette { opacity: 0.4; } /* Se aclara al activar */
+
+        /* --- CAPA DE REPOSO (Overlay Oscuro) --- */
+        .dimmer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px); /* Desenfoque inicial elegante */
+            z-index: 3;
+            transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }
+        body.mode-active .dimmer { 
+            background: rgba(0,0,0,0); 
+            backdrop-filter: blur(0px);
+        }
+
+        /* --- PANTALLA INICIO (LOGO) --- */
+        .intro-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            transition: all 0.8s ease;
+        }
+        body.mode-active .intro-screen {
+            opacity: 0; visibility: hidden; pointer-events: none; transform: scale(1.1);
+        }
+
+        .logo-btn {
+            background: transparent; border: none; cursor: pointer;
+            padding: 50px;
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .logo-btn img {
+            width: 60vw; max-width: 900px; height: auto;
+            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.8));
+        }
+        .logo-btn:active { transform: scale(0.97); }
+
+        .hint-text {
+            margin-top: 40px; color: rgba(255,255,255,0.8);
+            font-weight: 300; letter-spacing: 8px; text-transform: uppercase;
+            font-size: 1.2rem; animation: pulse 3s infinite;
+        }
+
+        /* --- DOCK DE CONTROL (BARRA INFERIOR) --- */
+        .control-dock {
+            position: absolute; bottom: 60px; left: 50%;
+            transform: translateX(-50%) translateY(150px); /* Oculto abajo */
+            width: 90%; max-width: 1500px;
+            height: 110px;
+            z-index: 20;
+            display: flex; justify-content: space-between; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: all 1s cubic-bezier(0.19, 1, 0.22, 1) 0.3s;
+        }
+        
+        body.mode-active .control-dock {
+            opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all;
+        }
+
+        /* Paneles de Cristal */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 60px;
+            height: 100%;
+            display: flex; align-items: center;
+            padding: 0 50px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        /* BOTÓN PRINCIPAL (CTA) */
+        .panel-cta { 
+            flex-grow: 1; margin-right: 30px; 
+            justify-content: flex-start; cursor: pointer; 
+            transition: background 0.3s, transform 0.3s; 
+        }
+        .panel-cta:active { background: rgba(255,255,255,0.15); transform: scale(0.99); }
+        
+        .cta-text {
+            font-size: 1.8rem; color: #fff; font-weight: 400; letter-spacing: 4px; text-transform: uppercase;
+            display: flex; align-items: center; gap: 30px; width: 100%;
+        }
+        .cta-arrow { transition: transform 0.4s ease; margin-left: auto; }
+        .panel-cta:hover .cta-arrow { transform: translateX(15px); }
+
+        /* BOTONES MULTIMEDIA */
+        .panel-controls { gap: 40px; }
+
+        .icon-btn {
+            background: transparent; border: none; color: #fff; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            width: 60px; height: 60px; opacity: 0.7; 
+            transition: opacity 0.3s, transform 0.2s;
+        }
+        .icon-btn:hover { opacity: 1; }
+        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn svg { width: 36px; height: 36px; fill: currentColor; }
+
+        /* SLIDER DE VOLUMEN (OPTIMIZADO TÁCTIL) */
+        .volume-container {
+            display: flex; align-items: center; gap: 20px; width: 220px;
+        }
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent; height: 40px; /* Área táctil grande */
+        }
+        input[type=range]:focus { outline: none; }
+        
+        /* Riel */
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; 
+            background: rgba(255,255,255,0.3); border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Tirador (Thumb) - Grande para dedos */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; 
+            height: 34px; width: 34px;
+            border-radius: 50%; 
+            background: #fff; 
+            cursor: pointer; 
+            margin-top: -15px; /* Centrar verticalmente */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
+
+        /* KEYFRAMES */
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. VIDEO LAYER -->
+    <div class="video-layer">
+        <iframe 
+            src="https://player.vimeo.com/video/1153499414?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=0&background=1&muted=1" 
+            frameborder="0" allow="autoplay; fullscreen" 
+            id="vimeo-player">
+        </iframe>
+    </div>
+
+    <!-- 2. VIÑETA & DIMMER -->
+    <div class="vignette"></div>
+    <div class="dimmer"></div>
+
+    <!-- 3. PANTALLA INICIO -->
+    <div class="intro-screen">
+        <button class="logo-btn" id="btn-start" aria-label="Iniciar">
+            <img src="logo-ceramica-experience.png" alt="Cerámica Experience Pamesa">
+        </button>
+        <div class="hint-text">Tocar para iniciar</div>
+    </div>
+
+    <!-- 4. CONTROLES FLOTANTES -->
+    <div class="control-dock">
+        
+        <!-- Botón Ver Colecciones -->
+        <div class="glass-panel panel-cta" onclick="irAColecciones()">
+            <div class="cta-text">
+                Descubrir Colecciones
+                <svg class="cta-arrow" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12H19M19 12L12 5M19 12L12 19"/></svg>
+            </div>
+        </div>
+
+        <!-- Botonera Media -->
+        <div class="glass-panel panel-controls">
+            
+            <button class="icon-btn" id="btn-restart" aria-label="Reiniciar">
+                <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            </button>
+
+            <div style="width:1px; height:40px; background:rgba(255,255,255,0.2);"></div>
+
+            <button class="icon-btn" id="btn-mute" aria-label="Audio">
+                <svg id="icon-vol-on" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <svg id="icon-vol-off" viewBox="0 0 24 24" style="display:none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+            </button>
+
+            <div class="volume-container">
+                <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1">
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script>
+        const iframe = document.querySelector('#vimeo-player');
+        const player = new Vimeo.Player(iframe);
+        
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnMute = document.getElementById('btn-mute');
+        const volSlider = document.getElementById('vol-slider');
+        const iconVolOn = document.getElementById('icon-vol-on');
+        const iconVolOff = document.getElementById('icon-vol-off');
+
+        let isMuted = false;
+        let isActive = false;
+
+        // --- 1. ACTIVAR EXPERIENCIA ---
+        btnStart.addEventListener('click', () => {
+            isActive = true;
+            document.body.classList.add('mode-active');
+            
+            player.setCurrentTime(0).then(() => {
+                player.setVolume(1);
+                volSlider.value = 1;
+                updateMuteIcon(false);
+                player.play();
+                player.setLoop(false); 
+            });
+        });
+
+        // --- 2. DETECTAR FIN VIDEO ---
+        player.on('ended', function() {
+            resetToIdle();
+        });
+
+        function resetToIdle() {
+            isActive = false;
+            document.body.classList.remove('mode-active');
+            
+            // Fade out sonido
+            let vol = 1;
+            const fadeAudio = setInterval(() => {
+                vol -= 0.1;
+                if(vol <= 0) {
+                    clearInterval(fadeAudio);
+                    player.setVolume(0);
+                    player.setLoop(true);
+                    player.play();
+                } else {
+                    player.setVolume(vol);
+                }
+            }, 100);
+        }
+
+        // --- 3. CONTROLES ---
+        btnRestart.addEventListener('click', () => {
+            player.setCurrentTime(0);
+            player.play();
+        });
+
+        btnMute.addEventListener('click', () => {
+            isMuted = !isMuted;
+            player.setVolume(isMuted ? 0 : parseFloat(volSlider.value));
+            updateMuteIcon(isMuted);
+            if(isMuted) volSlider.value = 0;
+            else volSlider.value = 1; 
+        });
+
+        volSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            player.setVolume(val);
+            isMuted = (val === 0);
+            updateMuteIcon(isMuted);
+        });
+
+        function updateMuteIcon(muted) {
+            iconVolOn.style.display = muted ? 'none' : 'block';
+            iconVolOff.style.display = muted ? 'block' : 'none';
+        }
+
+        // --- 4. NAVEGACIÓN A COLECCIONES ---
+        function irAColecciones() {
+            // Efecto de salida elegante
+            document.body.style.transition = "opacity 0.8s ease";
+            document.body.style.opacity = 0;
+            
+            // Bajar volumen gradualmente
+            player.setVolume(0);
+
+            setTimeout(() => {
+                // REDIRECCIÓN CONFIRMADA
+                window.location.href = "colecciones.html"; 
+            }, 800);
+        }
+
+        // Entrada Suave al cargar
+        document.body.style.opacity = 0;
+        document.body.style.transition = "opacity 0.8s ease";
+        window.onload = () => { document.body.style.opacity = 1; };
+
+        // --- 5. TIMER INACTIVIDAD ---
+        let idleTimer;
+        function resetTimer() {
+            clearTimeout(idleTimer);
+            if(isActive) {
+                idleTimer = setTimeout(resetToIdle, 120000); // 2 minutos
+            }
+        }
+        document.addEventListener('touchstart', resetTimer);
+        document.addEventListener('click', resetTimer);
+
+    </script>
+</body>
+</html>

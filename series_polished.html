@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Serie TECH - Pamesa Experience</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+            user-select: none;
+        }
+
+        /* --- FONDO AMBIENTAL (VIDEO) --- */
+        .ambient-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; 
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .ambient-bg iframe {
+            width: 100vw; height: 56.25vw;
+            min-height: 100vh; min-width: 177.77vh;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(1.2);
+            filter: blur(15px) brightness(0.5) saturate(1.2); 
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        .ambient-bg iframe.loaded { opacity: 1; }
+
+        .bg-fallback {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 0;
+        }
+
+        /* --- HEADER --- */
+        .header-ui {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 40px 60px;
+            z-index: 20;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .page-title {
+            font-size: 1.8rem; letter-spacing: 4px; text-transform: uppercase; color: rgba(255,255,255,0.9);
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 18px 40px; border-radius: 50px;
+            font-family: 'Montserrat'; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; backdrop-filter: blur(10px);
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .btn-back:hover { 
+            background: #fff; color: #000; transform: scale(1.05); 
+            box-shadow: 0 0 20px rgba(255,255,255,0.4);
+        }
+        .btn-back svg { width: 22px; height: 22px; fill: currentColor; }
+
+        /* --- MOSAICO GRID DINÁMICO --- */
+        .mosaic-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            padding: 130px 60px 60px 60px;
+            
+            display: grid;
+            gap: 25px;
+            /* La definición de columnas/filas ahora depende de la clase .layout-X */
+        }
+
+        /* --- LAYOUT 1: Clásico (Alto Izquierda, Ancho Arriba-Der) --- */
+        .mosaic-container.layout-1 {
+            grid-template-columns: 1.2fr 1fr 1fr; 
+            grid-template-rows: 1.2fr 1fr;
+        }
+        .layout-1 .item-0 { grid-column: 1 / 2; grid-row: 1 / 3; } /* Tall */
+        .layout-1 .item-1 { grid-column: 2 / 4; grid-row: 1 / 2; } /* Wide */
+        .layout-1 .item-2 { grid-column: 2 / 3; grid-row: 2 / 3; } /* Box */
+        .layout-1 .item-3 { grid-column: 3 / 4; grid-row: 2 / 3; } /* Box */
+
+        /* --- LAYOUT 2: Espejo (Alto Derecha, Ancho Arriba-Izq) --- */
+        .mosaic-container.layout-2 {
+            grid-template-columns: 1fr 1fr 1.2fr; 
+            grid-template-rows: 1.2fr 1fr;
+        }
+        .layout-2 .item-0 { grid-column: 3 / 4; grid-row: 1 / 3; } /* Tall Right */
+        .layout-2 .item-1 { grid-column: 1 / 3; grid-row: 1 / 2; } /* Wide Top Left */
+        .layout-2 .item-2 { grid-column: 1 / 2; grid-row: 2 / 3; } /* Box */
+        .layout-2 .item-3 { grid-column: 2 / 3; grid-row: 2 / 3; } /* Box */
+
+        /* --- LAYOUT 3: Invertido (Alto Izquierda, Ancho Abajo-Der) --- */
+        .mosaic-container.layout-3 {
+            grid-template-columns: 1.2fr 1fr 1fr; 
+            grid-template-rows: 1fr 1.2fr; /* Fila inferior más alta */
+        }
+        .layout-3 .item-0 { grid-column: 1 / 2; grid-row: 1 / 3; } /* Tall Left */
+        .layout-3 .item-1 { grid-column: 2 / 4; grid-row: 2 / 3; } /* Wide Bottom */
+        .layout-3 .item-2 { grid-column: 2 / 3; grid-row: 1 / 2; } /* Box Top */
+        .layout-3 .item-3 { grid-column: 3 / 4; grid-row: 1 / 2; } /* Box Top */
+
+        /* --- LAYOUT 4: Escalera (Ancho arriba, Ancho abajo desplazado) --- */
+        .mosaic-container.layout-4 {
+            grid-template-columns: 1fr 1fr 1fr; 
+            grid-template-rows: 1fr 1fr;
+        }
+        /* En este layout forzamos 2 anchos y 2 altos relativos */
+        .layout-4 .item-0 { grid-column: 1 / 3; grid-row: 1 / 2; } /* Wide Top Left */
+        .layout-4 .item-1 { grid-column: 2 / 4; grid-row: 2 / 3; } /* Wide Bottom Right */
+        .layout-4 .item-2 { grid-column: 3 / 4; grid-row: 1 / 2; } /* Box Top Right */
+        .layout-4 .item-3 { grid-column: 1 / 2; grid-row: 2 / 3; } /* Box Bottom Left */
+
+
+        /* --- ESTILOS TILE --- */
+        .tile {
+            position: relative;
+            border-radius: 25px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #000;
+            opacity: 0; 
+            transform: translateY(40px) scale(0.95);
+            /* La animación se mantiene igual */
+            animation: tileEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        /* Retrasos de animación basados en el orden del DOM, no en posición */
+        .item-0 { animation-delay: 0.1s; }
+        .item-1 { animation-delay: 0.2s; }
+        .item-2 { animation-delay: 0.3s; }
+        .item-3 { animation-delay: 0.4s; }
+
+        @keyframes tileEntrance {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .tile-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            transform: scale(1.0);
+            transition: transform 1.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+        
+        .tile-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.8; transition: opacity 0.5s ease;
+        }
+
+        .tile-content {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 40px;
+            z-index: 5;
+        }
+
+        .tile-name {
+            font-size: 2.5rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 10px; color: #fff; line-height: 0.9;
+            text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+        }
+        
+        /* Ajuste responsive para nombres largos en cajas pequeñas */
+        .tile-desc {
+            font-size: 1rem; font-weight: 300; color: rgba(255,255,255,0.85);
+            line-height: 1.4; max-width: 95%;
+            opacity: 0.7; transform: translateY(5px);
+            transition: all 0.4s ease;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* Limita texto a 3 líneas */
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+
+        /* Hover Effects */
+        .tile:active, .tile:hover {
+            transform: scale(0.98);
+            border-color: rgba(255,255,255,0.8);
+            box-shadow: 0 0 40px rgba(255,255,255,0.15);
+            z-index: 5;
+        }
+        .tile:active .tile-bg, .tile:hover .tile-bg { transform: scale(1.15); }
+        .tile:active .tile-desc, .tile:hover .tile-desc { opacity: 1; transform: translateY(0); color: #fff; }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-fallback"></div>
+    
+    <div class="ambient-bg">
+        <iframe 
+            src="https://player.vimeo.com/video/1153499414?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&background=1&muted=1&dnt=1" 
+            frameborder="0" 
+            allow="autoplay; fullscreen; picture-in-picture" 
+            title="Ambient Video">
+        </iframe>
+    </div>
+
+    <div class="header-ui">
+        <button class="btn-back" onclick="goBack()">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> VOLVER A COLECCIONES
+        </button>
+        <div class="page-title">COLECCIÓN <strong style="color: #fff; font-weight: 600;">TECH</strong></div>
+    </div>
+
+    <!-- El ID del contenedor ahora recibirá una clase random -->
+    <div class="mosaic-container" id="gridContainer"></div>
+
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script>
+        // --- CONTROL DE VIDEO ---
+        const iframe = document.querySelector('iframe');
+        const player = new Vimeo.Player(iframe);
+        player.ready().then(function() {
+            iframe.classList.add('loaded');
+            player.setVolume(0);
+            player.play().catch(e => console.error(e));
+        });
+
+        // --- DATOS SERIES ---
+        const seriesData = [
+            { id: 'ERGON', name: 'ERGON', desc: 'La fuerza de la piedra Breccia. Fragmentos sedimentarios que narran el paso del tiempo.', img: 'images/ergon.jpg' },
+            { id: 'ODYSSEY', name: 'ODYSSEY', desc: 'Mármol Botticino. Textura uniforme y calidez beige para una elegancia atemporal.', img: 'images/odyssey.jpg' },
+            { id: 'OPULUS DARK', name: 'OPULUS DARK', desc: 'Oscuridad opulenta. Contrastes profundos para espacios exclusivos.', img: 'images/opulus_dark.jpg' },
+            { id: 'VELHIRA', name: 'VELHIRA', desc: 'Esencia táctil. Un viaje sensorial a través de la materia.', img: 'images/velhira.jpg' }
+        ];
+
+        // --- LÓGICA DE ALEATORIEDAD ---
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('gridContainer');
+            
+            // 1. Elegir un Layout aleatorio (del 1 al 4)
+            const layoutId = Math.floor(Math.random() * 4) + 1; // 1, 2, 3 o 4
+            container.className = `mosaic-container layout-${layoutId}`;
+            console.log("Layout seleccionado:", layoutId);
+
+            // 2. Barajar los contenidos
+            const shuffledSeries = shuffle([...seriesData]);
+            
+            let html = '';
+            
+            // 3. Generar el HTML
+            // Nota: Ya no asignamos 'pos-tall' manualmente. Asignamos 'item-0', 'item-1', etc.
+            // El CSS se encarga de posicionar 'item-0' según el layout elegido.
+            shuffledSeries.forEach((serie, index) => {
+                // item-0 será el elemento principal (tall o wide según layout)
+                const itemClass = `item-${index}`; 
+                
+                html += `
+                    <div class="tile ${itemClass}" onclick="selectSeries('${serie.id}')">
+                        <div class="tile-bg" style="background-image: url('${serie.img}');"></div>
+                        <div class="tile-overlay"></div>
+                        <div class="tile-content">
+                            <h2 class="tile-name">${serie.name}</h2>
+                            <p class="tile-desc">${serie.desc}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function goBack() {
+            document.body.style.opacity = 0;
+            setTimeout(() => { window.location.href = 'colecciones.html'; }, 500);
+        }
+
+        function selectSeries(name) {
+            document.body.style.transform = "scale(1.05)";
+            document.body.style.opacity = "0";
+            document.body.style.transition = "transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease";
+            const filename = 'series_' + name.toLowerCase().replace(/\s+/g, '_') + '.html';
+            setTimeout(() => { window.location.href = filename; }, 500);
+        }
+
+        renderGrid();
+
+        document.body.style.opacity = 0;
+        document.body.style.transition = "opacity 0.8s ease";
+        window.onload = () => { document.body.style.opacity = 1; };
+
+        let idleTimer;
+        function resetTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                document.body.style.opacity = 0;
+                setTimeout(() => window.location.href = 'index.html', 1000);
+            }, 180000);
+        }
+        ['touchstart', 'click', 'scroll', 'mousemove'].forEach(evt => document.addEventListener(evt, resetTimer));
+        resetTimer();
+
+    </script>
+</body>
+</html>

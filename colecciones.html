@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Colecciones - Pamesa Cerámica Experience</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --card-width: 45vw; /* Ancho generoso para pantalla de 75" */
+            --card-height: 65vh;
+            --spacer: 5vw;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* --- FONDO AMBIENTAL --- */
+        .bg-fallback {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; z-index: 0;
+        }
+
+        .ambient-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; overflow: hidden; pointer-events: none;
+        }
+
+        .ambient-bg iframe {
+            width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(1.2);
+            /* Ajustado para igualar a series_tech.html */
+            filter: blur(15px) brightness(0.5) saturate(1.2); 
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        .ambient-bg iframe.loaded { opacity: 1; }
+
+        .vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, #000 95%);
+            z-index: 2; pointer-events: none;
+        }
+
+        /* --- UI HEADER --- */
+        .header-ui {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 50px 60px;
+            z-index: 20;
+            display: flex; justify-content: space-between; align-items: center;
+            pointer-events: none;
+        }
+        .header-ui > * { pointer-events: auto; }
+
+        .page-title {
+            font-size: 2rem; letter-spacing: 6px; text-transform: uppercase; font-weight: 300;
+            opacity: 0.9; text-shadow: 0 4px 20px rgba(0,0,0,1);
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; padding: 20px 45px; border-radius: 60px;
+            font-family: 'Montserrat'; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; backdrop-filter: blur(15px);
+            display: flex; align-items: center; gap: 15px;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+        .btn-back:hover { 
+            background: #fff; color: #000; 
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+        }
+        .btn-back svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* --- CARRUSEL --- */
+        .carousel-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            display: flex; align-items: center;
+            overflow-x: auto; overflow-y: hidden;
+            scroll-snap-type: x mandatory; 
+            overscroll-behavior-x: none;
+            -webkit-overflow-scrolling: touch;
+            cursor: grab;
+            padding: 0 var(--spacer);
+            gap: 4vw;
+            scrollbar-width: none; 
+        }
+        .carousel-wrapper::-webkit-scrollbar { display: none; }
+        .carousel-wrapper:active { cursor: grabbing; }
+        .carousel-wrapper.is-dragging { scroll-snap-type: none; scroll-behavior: auto; }
+
+        /* --- TARJETAS --- */
+        .card {
+            flex: 0 0 var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            border-radius: 30px;
+            scroll-snap-align: center;
+            cursor: pointer; /* Indica que es clickable */
+            
+            /* Performance */
+            transform: translateZ(0); 
+            will-change: transform, opacity;
+            
+            overflow: hidden;
+            user-select: none; -webkit-user-drag: none;
+
+            /* Estado inactivo */
+            transform: scale(0.9) perspective(1000px) rotateY(5deg);
+            opacity: 0.4;
+            filter: grayscale(80%);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* --- ESTADO ACTIVO (Spectacular Effect) --- */
+        .card.is-active {
+            transform: scale(1.05) perspective(1000px) rotateY(0deg);
+            opacity: 1;
+            filter: grayscale(0%);
+            z-index: 5;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 
+                0 30px 60px -10px rgba(0,0,0,0.9), 
+                0 0 100px -20px rgba(255,255,255,0.15);
+            /* Animación de flotación suave */
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: scale(1.05) translateY(0); }
+            50% { transform: scale(1.05) translateY(-15px); }
+        }
+
+        /* --- EFECTO DE DESTELLO (SHINE) --- */
+        .card::before {
+            content: '';
+            position: absolute; top: 0; left: -150%;
+            width: 80%; height: 100%;
+            background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+            transform: skewX(-25deg);
+            pointer-events: none; z-index: 10;
+            transition: none;
+        }
+
+        .card.is-active::before {
+            /* El brillo pasa cuando se activa */
+            animation: shineEffect 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: 0.2s;
+        }
+
+        @keyframes shineEffect {
+            0% { left: -150%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { left: 150%; opacity: 0; }
+        }
+
+        /* --- IMAGEN INTERNA --- */
+        .card-image {
+            width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            transform: scale(1.2);
+            transition: transform 1.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+            pointer-events: none;
+        }
+        .card.is-active .card-image { 
+            transform: scale(1); 
+        }
+
+        /* Overlay oscuro para texto */
+        .card-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6) 70%, #000 100%);
+            z-index: 2; pointer-events: none;
+        }
+
+        /* --- CONTENIDO DE TEXTO --- */
+        .card-content {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 60px;
+            z-index: 4;
+            transform: translateY(40px); opacity: 0;
+            transition: all 0.8s ease 0.1s;
+            pointer-events: none;
+        }
+        
+        .card.is-active .card-content { transform: translateY(0); opacity: 1; }
+
+        .card-num {
+            display: inline-block;
+            font-size: 1.2rem; font-weight: 700; letter-spacing: 4px; color: #d4af37; /* Toque dorado premium */
+            margin-bottom: 10px; border-bottom: 2px solid rgba(212, 175, 55, 0.5); padding-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0,0,0,1);
+        }
+        .card-title {
+            font-size: 4.5rem; font-weight: 500; text-transform: uppercase; letter-spacing: -2px; 
+            margin-bottom: 20px; color: #fff; line-height: 0.9;
+            text-shadow: 0 5px 30px rgba(0,0,0,0.8);
+        }
+        .card-desc {
+            font-size: 1.4rem; font-weight: 300; line-height: 1.5; color: rgba(255,255,255,0.9); 
+            max-width: 95%;
+            text-shadow: 0 2px 5px rgba(0,0,0,1);
+        }
+
+        .spacer { flex: 0 0 calc(50vw - (var(--card-width) / 2) - var(--spacer)); }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-fallback"></div>
+
+    <div class="ambient-bg">
+        <!-- Parámetros actualizados para coincidir con series_tech.html -->
+        <iframe 
+            src="https://player.vimeo.com/video/1153499414?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&loop=1&background=1&muted=1&dnt=1" 
+            frameborder="0" 
+            allow="autoplay; fullscreen; picture-in-picture"
+            title="Ambient Video">
+        </iframe>
+    </div>
+    
+    <div class="vignette"></div>
+
+    <div class="header-ui">
+        <button class="btn-back" onclick="volverInicio()">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> INICIO
+        </button>
+        <div class="page-title">COLECCIONES 2026</div>
+    </div>
+
+    <div class="carousel-wrapper" id="carousel">
+        <div class="spacer"></div>
+        
+        <!-- CARD 01: TECH -->
+        <div class="card" onclick="abrirSerie('series_tech.html')">
+            <div class="card-image" style="background-image: url('images/tech.jpg');"></div>
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <span class="card-num">01</span>
+                <h2 class="card-title">TECH</h2>
+                <p class="card-desc">Materiales vivos. Espacios que perduran.</p>
+            </div>
+        </div>
+
+        <!-- CARD 02: POLISHED -->
+        <div class="card" onclick="abrirSerie('series_polished.html')">
+            <div class="card-image" style="background-image: url('images/polished.jpg');"></div>
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <span class="card-num">02</span>
+                <h2 class="card-title">POLISHED</h2>
+                <p class="card-desc">La luz se convierte en protagonista.</p>
+            </div>
+        </div>
+
+        <!-- CARD 03: SOLID -->
+        <div class="card" onclick="abrirSerie('series_solid.html')">
+            <div class="card-image" style="background-image: url('images/solid.jpg');"></div>
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <span class="card-num">03</span>
+                <h2 class="card-title">SOLID</h2>
+                <p class="card-desc">Cemento y piedra con fuerza arquitectónica.</p>
+            </div>
+        </div>
+
+        <!-- CARD 04: WOODS -->
+        <div class="card" onclick="abrirSerie('series_woods.html')">
+            <div class="card-image" style="background-image: url('images/woods.jpg');"></div>
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <span class="card-num">04</span>
+                <h2 class="card-title">WOODS</h2>
+                <p class="card-desc">Calidez natural, llevada a la cerámica.</p>
+            </div>
+        </div>
+
+        <!-- CARD 05: WHITE BODY -->
+        <div class="card" onclick="abrirSerie('series_white_body.html')">
+            <div class="card-image" style="background-image: url('images/white_body.jpg');"></div>
+            <div class="card-overlay"></div>
+            <div class="card-content">
+                <span class="card-num">05</span>
+                <h2 class="card-title">WHITE BODY</h2>
+                <p class="card-desc">Precisión en relieve: diseño que se siente.</p>
+            </div>
+        </div>
+
+        <div class="spacer"></div>
+    </div>
+
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script>
+        // --- CONTROL DE VIDEO (Actualizado) ---
+        const iframe = document.querySelector('iframe');
+        const player = new Vimeo.Player(iframe);
+        
+        player.ready().then(function() {
+            iframe.classList.add('loaded');
+            player.setVolume(0);
+            player.play().catch(e => console.error(e));
+        });
+
+        const wrapper = document.getElementById('carousel');
+        const cards = document.querySelectorAll('.card');
+
+        // --- OBSERVER PARA CENTRADO ---
+        const observerOptions = {
+            root: wrapper,
+            threshold: 0.6, 
+            rootMargin: "0px -15% 0px -15%"
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-active');
+                } else {
+                    entry.target.classList.remove('is-active');
+                }
+            });
+        }, observerOptions);
+
+        cards.forEach(card => observer.observe(card));
+
+        // --- LOGICA DRAG AND DROP FLUIDO CON DETECCIÓN DE CLIC ---
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        let hasMoved = false; // Bandera para diferenciar clic de arrastre
+
+        wrapper.addEventListener('mousedown', (e) => {
+            isDown = true;
+            hasMoved = false; // Reseteamos bandera
+            wrapper.classList.add('is-dragging');
+            startX = e.pageX - wrapper.offsetLeft;
+            scrollLeft = wrapper.scrollLeft;
+        });
+
+        wrapper.addEventListener('mouseleave', () => {
+            isDown = false;
+            wrapper.classList.remove('is-dragging');
+        });
+
+        wrapper.addEventListener('mouseup', () => {
+            isDown = false;
+            wrapper.classList.remove('is-dragging');
+        });
+
+        wrapper.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - wrapper.offsetLeft;
+            const walk = (x - startX) * 1.8; 
+            
+            // Si nos movemos más de 5 píxeles, consideramos que es un arrastre, no un clic
+            if (Math.abs(x - startX) > 5) {
+                hasMoved = true;
+            }
+
+            wrapper.scrollLeft = scrollLeft - walk;
+        });
+
+        // --- NAVEGACIÓN A LAS SERIES ---
+        function abrirSerie(url) {
+            // Si el usuario estaba arrastrando el carrusel, no hacemos nada (evita clics accidentales)
+            if (hasMoved) return;
+
+            // Animación de salida y redirección
+            document.body.style.opacity = 0;
+            setTimeout(() => {
+                window.location.href = url;
+            }, 600);
+        }
+
+        // --- RESET AUTOMÁTICO (KIOSK MODE) ---
+        function volverInicio() {
+            document.body.style.opacity = 0;
+            setTimeout(() => { window.location.href = 'index.html'; }, 800);
+        }
+
+        document.body.style.opacity = 0;
+        document.body.style.transition = "opacity 1s ease";
+        window.onload = () => { document.body.style.opacity = 1; };
+
+        let idleTimer;
+        function resetTimer() {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(volverInicio, 180000); // 3 minutos
+        }
+        
+        ['touchstart', 'scroll', 'mousemove', 'click'].forEach(evt => 
+            document.addEventListener(evt, resetTimer, {passive: true})
+        );
+        resetTimer();
+
+    </script>
+</body>
+</html>
